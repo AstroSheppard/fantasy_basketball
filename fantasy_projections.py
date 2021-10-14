@@ -1,6 +1,4 @@
-
-
-from urllib2 import urlopen
+from urllib.request import urlopen
 # from urllib.requests import urlopen
 import bs4
 from bs4 import BeautifulSoup as bs
@@ -45,7 +43,7 @@ def get_matchup(team1, team2, week, league='51329'):
     matchup=matchup[:].apply(pd.to_numeric, errors='ignore')
     matchup['Team']=['1',team2]
     matchup1 = matchup.copy()
-    
+
     temp="https://basketball.fantasysports.yahoo.com/nba/{l}/matchup?date=totals&week={w}&mid1={t1}&mid2={t2}"
     url=temp.format(w=str(week), t1=team2, t2=team1, l=league)
     html=urlopen(url)
@@ -82,10 +80,10 @@ def get_matchup(team1, team2, week, league='51329'):
     matchupx = matchup.T
     matchup = matchupx.set_index('Team')
     return matchup
-       
+
 
 #def trade(team1, team2, players1, players2, fas=None):
-    """Test affect of trade. fas is for if the amount of players 
+    """Test affect of trade. fas is for if the amount of players
     in the trade is uneven and you'd pick up a FA."""
     #read in team1 and team 2's rosters. Switch players 1 and 2, and sum. Use in get_all() to see
     # how trade affects rankings
@@ -98,7 +96,7 @@ def get_fas(sort, proj, player, league='51329', date=None, trade=False):
     #     urltemp = 'https://basketball.fantasysports.yahoo.com/nba/{l}/2/playerswatch' \
     #               '?&status=A&stat1={proj}&jsenabled=1'
     #     key = {'proj': 'P&stat2=P', 'proj_opp':'O'}
- 
+
     urltemp = "https://basketball.fantasysports.yahoo.com/nba/{l}/players?&sort={sort}" \
               "&status=A&pos=P&stat1={proj}&jsenabled=1&count={count}"
 
@@ -109,7 +107,7 @@ def get_fas(sort, proj, player, league='51329', date=None, trade=False):
          , 'blk':'15&sdir=1', 'TO':'16&sdir=0'
          , 'proj':'S_PSR', 'next7':'S_PS7', 'avg':'S_AS_2019'
          , 'opp':'O_O', 'avg30' : 'S_AL30'}
- 
+
     df=pd.DataFrame()
     c=0
 
@@ -163,7 +161,7 @@ def get_fas(sort, proj, player, league='51329', date=None, trade=False):
         df['FTA']=fta
         df.replace('-', value=0.0, inplace=True)
         # drop columns to match format of team stats
-        
+
         if proj=='avg' or proj=='avg30':
             d=[0,2,3,4,5,6,7,8,9,10,11,13]
             df=df.drop(axis=1, labels=[df.columns[i] for i in d])
@@ -180,10 +178,10 @@ def get_fas(sort, proj, player, league='51329', date=None, trade=False):
         if player not in df['Players'].values:
             sys.exit('Player not in FA list. Check spelling and use \'I. LastName\' format')
 
-    
+
     return df[df['Players']==player].iloc[0,1:]
 
-    
+
 def get_team(team, type, league='51329', date=None, drops=None,
              include_bench=False, injured=True, trade = []):
 
@@ -200,7 +198,7 @@ def get_team(team, type, league='51329', date=None, drops=None,
         link=day+key1[type]
     else:
         link='?'+key1[type]
-        
+
     url=url_temp.format(id=league, team=team, type=link)
     html=urlopen(url)
 
@@ -214,7 +212,7 @@ def get_team(team, type, league='51329', date=None, drops=None,
         if len(player)>4:
             del player[4]
     player_data=[player for player in player_data if len(player)==len(headers)]
-            
+
     # Clean up data
     df=pd.DataFrame(player_data, columns=headers)
     try:
@@ -234,7 +232,7 @@ def get_team(team, type, league='51329', date=None, drops=None,
 
     # stats['Players']=[name.split('\n')[2].split('-')[0][:-4].strip()
     #              for name in stats['Players'].values]
-    
+
     fgm=[]
     ftm=[]
     fga=[]
@@ -269,12 +267,12 @@ def get_team(team, type, league='51329', date=None, drops=None,
             data_rows = soup.findAll('tr')[1:]
             player_data = [[td.getText() for td in data_rows[i].findAll('td')[:-1]]
                            for i in range(len(data_rows))]
-    
+
             for player in player_data:
                 if len(player)>4:
                     del player[4]
             player_data=[player for player in player_data if len(player)==len(headers)]
-            
+
             # Clean up data
             opps=pd.DataFrame(player_data, columns=headers)
             opps['Players']=[name.split('\n')[2].rpartition('-')[0].strip()[:-3].strip()
@@ -285,20 +283,20 @@ def get_team(team, type, league='51329', date=None, drops=None,
             opps['Today']=opps[day]!=''
             opps=pd.concat([opps['Players'],opps['Today']], axis=1).set_index('Players')
             stats=stats.join(opps, on='Players')
-        
-        
+
+
     if date != None:
         if include_bench==False:
             stats=stats.loc[:'Util',:]
         else:
             if team != '2' and team != '9':
                 stats=stats.loc[:'BN',:]
-        
+
     else:
         if team != '2':
             stats=stats.loc[:'BN',:]
 
-            
+
     try:
         if drops != None:
             stats=stats[stats['Players'] != drops]
@@ -352,8 +350,8 @@ def get_team(team, type, league='51329', date=None, drops=None,
         return [team, person]
     else:
         return team
-    # Now we have, in a good format, all the projected stats for 
-  
+    # Now we have, in a good format, all the projected stats for
+
 
 def matchup(team1, team2, week, start=0, end=7,
             type='proj', league='51329', fas=None, drops=None,
@@ -362,20 +360,20 @@ def matchup(team1, team2, week, start=0, end=7,
 
     # Should I account for minutes and rates separetely? This way I can acct for correlation between
     # blks and pts and stls due to playing time
-    
+
     days=[str(date.today()+datetime.timedelta(days=x)) for x in range(start, end)]
     if drops == None:
         drops = [None]*len(days)
     if fas == None:
         fas = [None]*len(days)
-        
-    drops = dict(zip(days, drops))
-    fas = dict(zip(days, fas))
-    
+
+    drops = dict(list(zip(days, drops)))
+    fas = dict(list(zip(days, fas)))
+
     t1=pd.Series()
     t2=pd.Series()
     for i, dates in enumerate(days):
-        print dates
+        print(dates)
         t1=t1.add(get_team(team1, type, league=league, date=dates,
                            drops=drops[dates],
                            include_bench=include_bench), fill_value=0)
@@ -438,7 +436,7 @@ def matchup(team1, team2, week, start=0, end=7,
     matchup['2PM']=matchup['FGM']-matchup['3PTM']
     matchup['FTO']=matchup['FTA']-matchup['FTM']
     matchup['FGO']=matchup['FGA']-matchup['FGM']
-    
+
     t1=matchup.loc[team1,:].astype(int)
     t2=matchup.loc[team2,:].astype(int)
     n=100000
@@ -479,8 +477,8 @@ def matchup(team1, team2, week, start=0, end=7,
     tie=(df1==df2).astype(int)
     result=win+0.5*tie
     wins=result.sum(axis=1)
-    
-    
+
+
     weights= np.ones_like(wins)/float(len(wins))
     hold=plt.hist(wins, bins=np.arange(0,20)/2.-.25, weights=weights)
     freq=hold[0]*100
@@ -492,31 +490,31 @@ def matchup(team1, team2, week, start=0, end=7,
     perc_tie.name='Tie'
     perc=pd.concat([perc_win, perc_tie], axis=1)
     ev=np.round(np.sum(outcome/100.*np.arange(19)/2.),3)
-    
-    print 'Odds of finishing with each point amount:'
-    print outcome
-    print
-    print 'Odds of winning each category:'
-    print perc
-    print
-    print 'Projected Results (averages):'
-    print total
-    print 
-    print 'Expected Points: %.2f ' % ev
-    print 'Win: %.2f%%' %  outcome[outcome.index>=5].sum()
-    print 'Lose: %.2f%%' %  outcome[outcome.index<4.5].sum()
-    print 'Tie: %.2f%%' %  outcome[4.5]
-    print
+
+    print('Odds of finishing with each point amount:')
+    print(outcome)
+    print()
+    print('Odds of winning each category:')
+    print(perc)
+    print()
+    print('Projected Results (averages):')
+    print(total)
+    print()
+    print(('Expected Points: %.2f ' % ev))
+    print(('Win: %.2f%%' %  outcome[outcome.index>=5].sum()))
+    print(('Lose: %.2f%%' %  outcome[outcome.index<4.5].sum()))
+    print(('Tie: %.2f%%' %  outcome[4.5]))
+    print()
     if sim == True:
         return wins
     else:
         return [outcome, perc]
-    
+
 
 def get_all(week=19, type='r', league='51329', inj=False):
     # TRADES: Can only do 1 for 1 trades, but can do multiple teams.
     # Set the players coming from each team, and note the team they will
-    # go to. 
+    # go to.
 
     ## Later: can add actual schedule to go with averages, can go through every actual matchup
     ## , can account for injured guys, use hashtag instead of yahoo
@@ -532,7 +530,7 @@ def get_all(week=19, type='r', league='51329', inj=False):
     avg_30_trades = pd.DataFrame()
     trades = np.zeros((12,5)).astype(int).astype(str)
     #trades[1, 0] = 'Aaron Gordon'
-    #trades[1, 1] = 'Alec Burks' 
+    #trades[1, 1] = 'Alec Burks'
     #trades[0, 0] = 'Andre Drummond'
     #trades[6, 0] = 'Ricky Rubio'
     trade_teams = np.zeros(12).astype(str)
@@ -550,12 +548,12 @@ def get_all(week=19, type='r', league='51329', inj=False):
     #drops[1, 1] = ''
 
     for num, i in enumerate(teams):
-        print i
+        print(i)
         if drops[num, 0] == '0':
             drop = None
         else:
             drop = drops[num]
-            
+
         trade_list = trades[num, trades[num,:] != '0']
         if len(trade_list) != 0:
             proj_series, proj_players = get_team(str(i), 'r', league=league,
@@ -568,7 +566,7 @@ def get_all(week=19, type='r', league='51329', inj=False):
                                                      include_bench=True, injured=inj,
                                                      trade=trade_list, drops=drop)
 
-        
+
             proj_players['Team'] = trade_teams[num]
             proj_trades = proj_trades.append(proj_players,
                                              ignore_index=True)
@@ -585,14 +583,14 @@ def get_all(week=19, type='r', league='51329', inj=False):
                                   include_bench=True, injured=inj, drops=drop)
             avg_30_series = get_team(str(i), 'avg_30', league=league,
                                      include_bench=True, injured=inj, drops=drop)
-            
+
         if fas_teams[num] != '0':
             af = get_fas('owned', 'avg', fas_teams[num], trade=True)
             a30f = get_fas('owned', 'avg30', fas_teams[num], trade=True)
             pf = get_fas('owned', 'proj', fas_teams[num], trade=True)
             pf = pf * pf['GP']
             pf = pf.drop('GP')
-            
+
 
             pf['Team']=str(i)
             proj_fas=proj_fas.append(pf, ignore_index=True)
@@ -623,19 +621,19 @@ def get_all(week=19, type='r', league='51329', inj=False):
         avg_trades=avg_trades.set_index('Team').drop(['Inj', 'Players'], axis=1).groupby('Team').sum()
         avg_30_trades=avg_30_trades.set_index('Team').drop(['Inj', 'Players'], axis=1).groupby('Team').sum()
 
-        print proj_trades
+        print(proj_trades)
     if np.any(fas_teams != '0'):
         proj_fas = proj_fas.set_index('Team')
         avg_fas = avg_fas.set_index('Team')
         avg_30_fas = avg_30_fas.set_index('Team')
 
-    print avg_30_fas
-    print avg_fas
-    print proj_fas
-    
-    print proj_trades
-    print avg_trades
-    print avg_30_trades
+    print(avg_30_fas)
+    print(avg_fas)
+    print(proj_fas)
+
+    print(proj_trades)
+    print(avg_trades)
+    print(avg_30_trades)
     # Group avg trades by team first and sum them
     avg = avg.add(avg_trades, fill_value=0)
     avg_30 = avg_30.add(avg_30_trades, fill_value=0)
@@ -647,19 +645,19 @@ def get_all(week=19, type='r', league='51329', inj=False):
     nGames = 3.17 # average per week. Will vary team to team
     avg = avg * nGames
     avg_30 = avg_30 * nGames
-    
+
     # Weighted average helps balance future projections (which
     # have games expected to play weighed in), actual performance
     # (since projections can be wild), and recent trends.
     paa = 0.5*proj + 0.4*avg + 0.1*avg_30
-    
+
     paa['FG_perc'] = paa['FGM']/paa['FGA']
     paa['FT_perc'] = paa['FTM']/paa['FTA']
     weekly=paa.drop(axis=1, labels=['FGA','FTM', 'FGM', 'FTA' ])
     weekly=weekly.drop(axis=1, labels=[])
     # weekly.loc[:,'FG_perc':'FT_perc']*=weeks_left
     contenders = weekly.drop(['3', '4','5','7', '8', '1','10'])
-    print contenders
+    print(contenders)
 
     #contenders=all.drop(axis=1, labels=['FGA','FTM', 'FGM', 'FTA', 'FG_perc', 'FT_perc'])
     #contenders = contenders.drop(['4','5','7','10'])
@@ -672,11 +670,11 @@ def get_all(week=19, type='r', league='51329', inj=False):
     zscores['Total'] =  zscores.sum(axis=1)
     ranks = contenders.rank(axis=0, ascending=False)
     ranks.loc[:,'TO'] = 9 - ranks.loc[:,'TO']
-    print ranks
-    print zscores
+    print(ranks)
+    print(zscores)
 
     team_nums = np.arange(1,13).astype(str)
-    
+
     paa['2PM']=paa['FGM']-paa['3PTM']
     paa['FTO']=paa['FTA']-paa['FTM']
     paa['FGO']=paa['FGA']-paa['FGM']
@@ -684,7 +682,7 @@ def get_all(week=19, type='r', league='51329', inj=False):
     paa.index = paa.index.astype(int)
     paa = paa.sort_values('Team')
     paa.index = paa.index.astype(str)
-    
+
     #t1=all.loc[team1,:].astype(int)
     #t2=matchup.loc[team2,:].astype(int)
     n=100000
@@ -693,8 +691,8 @@ def get_all(week=19, type='r', league='51329', inj=False):
     for i in range(d1.shape[1]):
         df_team = pd.DataFrame(d1[:,i,:], columns=paa.columns, index=[team_nums[i]]*n)
         df = pd.concat([df, df_team], axis=0)
-        print team_nums[i]
-    
+        print((team_nums[i]))
+
     #d2=np.random.poisson(t2.values, size=(n,t2.shape[0]))
     #df1=pd.DataFrame(d1, columns=all.columns)
     #df2=pd.DataFrame(d2, columns=t2.index)
@@ -711,7 +709,7 @@ def get_all(week=19, type='r', league='51329', inj=False):
     gen = itertools.combinations(team_nums, r=2)
     evs = pd.DataFrame(index=team_nums, columns=team_nums)
     win_perc = pd.DataFrame(index=team_nums, columns=team_nums)
-    
+
     wins_dist = pd.DataFrame(index=np.repeat(team_nums, n), columns=team_nums)
     bad_combos = [('1', '2'), ('1','11'), ('1', '12'), ('1','3'), ('1', '4'), ('1','5'),('1','6'),('1','7'),
                   ('2', '10'), ('2', '11'), ('2','12'), ('2', '3'), ('2','4'), ('2','5'), ('2','6'), ('3','4'),('4','11'),
@@ -731,7 +729,7 @@ def get_all(week=19, type='r', league='51329', inj=False):
             wins = matchup(team1, team2, 19, end=4, sim=True)
         else:
             wins = matchup(team1, team2, 20, start=4, end=11, sim=True)
-            
+
         wins2 = 9 - wins
         wins.index = [team1]*n
         wins2.index = [team2]*n
@@ -741,7 +739,7 @@ def get_all(week=19, type='r', league='51329', inj=False):
     groups = totals_dist.groupby(totals_dist.index).apply(list)
     score_dist = pd.DataFrame(data=np.stack(groups.values).T, columns=groups.index)
 
-        
+
     """for combo in gen:
         if combo in bad_combos:
             print 'bad'
@@ -759,12 +757,12 @@ def get_all(week=19, type='r', league='51329', inj=False):
             tie=(df1==df2).astype(int)
             result=win+0.5*tie
             wins=result.sum(axis=1)
-            
+
             ev = wins.mean().round(3)
             ev2 = 9.0 - ev
 
-            
-        
+
+
             # weights= np.ones_like(wins)/float(len(wins))
             # hold=plt.hist(wins, bins=np.arange(0,20)/2.-.25, weights=weights)
             # freq=hold[0]*100
@@ -782,16 +780,16 @@ def get_all(week=19, type='r', league='51329', inj=False):
             evs.loc[team2,team1] = ev
             evs.loc[team1,team2] = ev2
             win_perc.loc[team2,team1] = perc_win
-            win_perc.loc[team1,team2] = 100. - perc_win 
-            
+            win_perc.loc[team1,team2] = 100. - perc_win
+
             wins2 = 9 - wins
             wins.index = [team1]*n
             wins2.index = [team2]*n
             wins_dist.loc[team1,team2]=wins
             wins_dist.loc[team2,team1]=wins2
-            
 
-    
+
+
     evs['Avg'] = evs.mean(axis=0)
     evs['Avg_win_perc'] = win_perc.mean(axis=0)
     print evs.sort_values('Avg', ascending=False)
@@ -807,8 +805,8 @@ def get_all(week=19, type='r', league='51329', inj=False):
     score_dist = score_dist + current
 
     score_means = score_dist.mean().sort_values(ascending=False)
-    print score_means
-    print score_dist.std().sort_values(ascending=False)
+    print(score_means)
+    print((score_dist.std().sort_values(ascending=False)))
     season_rank = score_dist.rank(axis=1, ascending=False, method='first')
 
     reg_win = ((season_rank==1.).sum()/n*100.).round(2).sort_values(ascending=False)
@@ -824,7 +822,7 @@ def get_all(week=19, type='r', league='51329', inj=False):
     #plt.show()
 
     playoff_ev = playoff.copy() - playoff.copy()
-    print "now do playoff teams only"
+    print("now do playoff teams only")
 
     bad_combos=[]
     for i, seed in season_rank.iterrows():
@@ -834,7 +832,7 @@ def get_all(week=19, type='r', league='51329', inj=False):
         # Create win_perc matrix
         #wp = np.zeros((6,6))
         # populate the rest of the array
-    
+
         playoff_teams = seeds.index
         team_nums = np.sort(playoff_teams.values.astype(int)).astype(str)
         gen = itertools.combinations(team_nums, r=2)
@@ -842,30 +840,30 @@ def get_all(week=19, type='r', league='51329', inj=False):
         # win_perc = pd.DataFrame(index=team_nums, columns=team_nums)
 
         # wins_dist = pd.DataFrame(index=np.repeat(team_nums, n), columns=team_nums)
-        
+
         for combo in gen:
             #if combo not in bad_combos:
             #    pass
             if combo in bad_combos:
                 pass
             else:
-                #bad_combos.remove(combo)  
+                #bad_combos.remove(combo)
                 bad_combos.append(combo)
                 team1 = combo[0]
                 team2 = combo[1]
                 df1 = df.loc[team1,:].reset_index()
                 df2 = df.loc[team2,:].reset_index()
-                
+
                 win=(df1>df2).astype(int)
                 win['TO']=(df1['TO']<df2['TO']).astype(int)
                 tie=(df1==df2).astype(int)
                 result=win+0.5*tie
                 wins=result.sum(axis=1)
 
-            
+
                 #ev = wins.mean().round(3)
                 #ev2 = 9.0 - ev
-                
+
                 # weights= np.ones_like(wins)/float(len(wins))
                 # hold=plt.hist(wins, bins=np.arange(0,20)/2.-.25, weights=weights)
                 # freq=hold[0]*100
@@ -886,7 +884,7 @@ def get_all(week=19, type='r', league='51329', inj=False):
                 #evs.loc[team1,team2] = ev2
                 win_perc.loc[team2,team1] = perc_win
                 win_perc.loc[team1,team2] = 100. - perc_win
-            
+
                 #wins2 = 9 - wins
                 #wins.index = [team1]*n
                 #wins2.index = [team2]*n
@@ -894,7 +892,7 @@ def get_all(week=19, type='r', league='51329', inj=False):
                 #wins_dist.loc[team2,team1]=wins2
 
         wp = win_perc.loc[seeds.index,seeds.index]
-        mapper = dict(zip(seeds.index.values, seeds.values))
+        mapper = dict(list(zip(seeds.index.values, seeds.values)))
         seed_wp = wp.rename(index=mapper, columns=mapper)
         cols = seed_wp.columns.sort_values()
         seed_wp = seed_wp[cols].sort_index().T
@@ -941,11 +939,11 @@ def get_all(week=19, type='r', league='51329', inj=False):
         # Expected values
 
         playoff_money = champ*300. + runner*150. + bronze*50.
-        invert_mapper = {v: k for k, v in mapper.iteritems()}
+        invert_mapper = {v: k for k, v in list(mapper.items())}
         playoff_money = playoff_money.rename(index=invert_mapper)
         others = pd.Series(index = remainder).fillna(0)
         playoff_ev = playoff_ev + playoff_money.append(others)
-        
+
     playoff_ev = playoff_ev/n
     gross = playoff_ev + reg_cash
     profit = gross - 50
@@ -957,7 +955,7 @@ def get_all(week=19, type='r', league='51329', inj=False):
     #groups = totals_dist.groupby(totals_dist.index).apply(list)
     #score_dist = pd.DataFrame(data=np.stack(groups.values).T, columns=groups.index)
 
- 
+
     #current =  [61, 63, 56, 48, 48, 53, 54, 61, 69, 41, 68, 69]
     #current = pd.Series(data=current, index = np.arange(1,13).astype(str))
     #score_dist = score_dist + current
@@ -976,27 +974,27 @@ def get_all(week=19, type='r', league='51329', inj=False):
     #tie3 = ((season_rank==3.5).sum()/n).round(2).sort_values(ascending=False)
 
     ## Figure out later
-   # profit_win = win/100.*300 + second/100.*150 + third/100.*50 
+   # profit_win = win/100.*300 + second/100.*150 + third/100.*50
     #profit_tie = tie1*450/2.0 + tie2*100. + tie3*25.
     #playoff_profit = (profit_win + profit_tie)*playoff/100.
 
     #print "Top 3:",  cash
-    print "Playoff percent:",  playoff
-    print "Regular Season EV", reg_cash
-    print "Total EV", gross
-    print "Net EV", profit
+    print(("Playoff percent:",  playoff))
+    print(("Regular Season EV", reg_cash))
+    print(("Total EV", gross))
+    print(("Net EV", profit))
     # print "Bye odds", bye
     # score_dist.hist(bins=12, density=True)
     # plt.show()
     #score_dist.rank(axis=1, ascending=False).hist(bins=12, density=True)
     #plt.show()
-    
+
     ss
-   
+
     return paa
 
 #def sim(t1, t2, week, start=0, end=7, n=100000,fas=None,drops=None, ngames=None):
-#    """ This only knows current roster and current matchup totals, so running during 
+#    """ This only knows current roster and current matchup totals, so running during
 #    games will be inaccurate. Any FAs/drops - even if already made - need to be input"""
 #    g1=get_games(team=t1,start=start, end=end, adds=fas, drops=drops, ngames=ngames)
 #    g2=get_games(team=t2,start=start, end=end)
@@ -1012,7 +1010,7 @@ def get_all(week=19, type='r', league='51329', inj=False):
 #    err2.name=t2
 #    errs=pd.concat((err1,err2),axis=1).T
 #    errs=errs.drop(['FGM','FTM','FGA', 'FTA'], axis=1).round(3)
-    
+
 #    d1=d1.add(current.loc[t1,:])
 #    d2=d2.add(current.loc[t2,:])
 #    d1['FG_perc']=d1['FGM']/d1['FGA']
@@ -1034,7 +1032,7 @@ def get_all(week=19, type='r', league='51329', inj=False):
 #    print outcome
 #    print perc
 #    print errs
-    
+
 #    return ev
 
 #def get_dist(avgs,games, n=100000):
@@ -1062,7 +1060,7 @@ def get_all(week=19, type='r', league='51329', inj=False):
 
 
 # def corr()
-#    """Read in like 10 players stats for every game, scatter plots (corner?) 
+#    """Read in like 10 players stats for every game, scatter plots (corner?)
 #    between every pair of stats to find correlations"""
 
 #def brier():
@@ -1070,21 +1068,21 @@ def get_all(week=19, type='r', league='51329', inj=False):
 
 
 
-    
+
 #Daily projections actually do pretty well. Compare daily to season projected and season avg
-# Season projections either don't change or change every week. 
+# Season projections either don't change or change every week.
 
 # Get trade analyzer working
 
 # Read in all players, search for correlations between stats
 
 #def get_players():
-    
+
 #def get_games(team='10', start=0, end=7, league='51329',
 #              drops=None, adds=None, ngames=None):
 #    """ Gets total reamining games for every player on roster. If dropping someone, input there name
 #    in drops (format: drops=[[players dropped today], [players dropped tomorrow], etc.]
-#    To account for FAs, give list of FAs in adds (fas=[FA1, FA2, etc]) and the number of games the will play 
+#    To account for FAs, give list of FAs in adds (fas=[FA1, FA2, etc]) and the number of games the will play
 #    (count this manually: ngames=[1,2,1...])"""
 #    days=[str(date.today()+datetime.timedelta(days=x)) for x in range(start,end)]
 
@@ -1113,7 +1111,7 @@ def get_all(week=19, type='r', league='51329', inj=False):
 #            if len(player)>4:
 #                del player[4]
 #        player_data=[player for player in player_data if len(player)==len(headers)]
-        
+
         # Clean up data
 #        opps=pd.DataFrame(player_data, columns=headers)
 #        opps['Players']=[name.split('\n')[2].rpartition('-')[0].strip()[:-3].strip()
@@ -1134,12 +1132,12 @@ def get_all(week=19, type='r', league='51329', inj=False):
 #    return total
 
 #def get_avg(team='10', fas=None):
-    
+
 #    url_temp="https://basketball.fantasysports.yahoo.com/nba/{id}/{team}?stat1=AS&stat2=AS_2018"
 
 #    item='51329'
 #    team=team
-        
+
 #    url=url_temp.format(id=item, team=team)
 #    html=urlopen(url)
 
@@ -1153,7 +1151,7 @@ def get_all(week=19, type='r', league='51329', inj=False):
 #        if len(player)>4:
 #            del player[4]
 #    player_data=[player for player in player_data if len(player)==len(headers)]
-            
+
     # Clean up data
 #    df=pd.DataFrame(player_data, columns=headers)
 #    df=df.drop(axis=1, labels=['Action', 'Forecast', 'Opp', 'Status'])
@@ -1187,7 +1185,7 @@ def get_all(week=19, type='r', league='51329', inj=False):
 #            df.name=fa
 #            df=df.drop(['FG_perc','FT_perc'])
 #            stats=stats.append(df)
-#    
+#
 #    return stats
 
 def record_predictions(week, team1s, team2s,
@@ -1216,7 +1214,7 @@ def record_predictions(week, team1s, team2s,
     hold['Week'] = week
     hold['Labels'] = outcome.index.astype(str).append(perc.index+'_win').append(perc.index + '_tie')
     hold=hold.set_index(['Week', 'Labels'])
-    
+
     #saving = int(raw_input('Did you set up correct matchups ' \
     #                       'and days for the week? '))
     saving = 1
@@ -1276,7 +1274,7 @@ def record_results(week, team1s, team2s, league='51329', mock=False):
         match = match.iloc[:,:-4]
         for j in range(2):
             for k in range(2):
-                if isinstance(match.iloc[j, k], unicode):
+                if isinstance(match.iloc[j, k], str):
                     if match.iloc[j,k].endswith('*'):
                         match.iloc[j,k]=float(match.iloc[j,k][:-1])+.001
         ties = match.loc[team1s[i],:] == match.loc[team2s[i],:]
@@ -1315,7 +1313,7 @@ if __name__ == '__main__':
     league = '51329'
     mock=False
     #record_results(pre_week, teams1, teams2, league=league, mock=mock)
-    print "Results recorded for league %s" % league
+    print(("Results recorded for league %s" % league))
 
     #league = '137124'
     #teams1 = np.array([1, 3]).astype(str)
@@ -1329,36 +1327,33 @@ if __name__ == '__main__':
     teams1 = np.array([2, 1, 10, 3, 4, 5]).astype(str)
     teams2 = np.array([8, 9, 11, 7, 6, 12]).astype(str)
     record_predictions(week, teams1, teams2, league=league, mock=mock)
-    print "Predictions recorded for league %s" % league
-    print
-    print
+    print(("Predictions recorded for league %s" % league))
+    print()
+    print()
     record_predictions(week, teams1, teams2, league=league, mock=mock, type='avg')
-    print "Average predictions recorded for league %s" % league
-    print
-    print
+    print(("Average predictions recorded for league %s" % league))
+    print()
+    print()
     record_predictions(week, teams1, teams2,
                        league=league, mock=mock, type='avg_30')
-    print "30-day average predictions recorded for league %s" % league
-    print
-    print
+    print(("30-day average predictions recorded for league %s" % league))
+    print()
+    print()
     sys.exit()
     league = '137124'
     teams1 = np.array([1, 3]).astype(str)
     teams2 = np.array([2, 4]).astype(str)
     mock=True
     record_predictions(week, teams1, teams2, league=league, mock=mock, bench=False)
-    print "Predictions recorded for league %s" % league
-    print
-    print
+    print(("Predictions recorded for league %s" % league))
+    print()
+    print()
     record_predictions(week, teams1, teams2, league=league, mock=mock, type='avg')
-    print "Average predictions recorded for league %s" % league
-    print
-    print
+    print(("Average predictions recorded for league %s" % league))
+    print()
+    print()
     record_predictions(week, teams1, teams2,
                        league=league, mock=mock, type='avg_30')
-    print "30-day average predictions recorded for league %s" % league
-    print
-    print
-
-
-    
+    print(("30-day average predictions recorded for league %s" % league))
+    print()
+    print()
