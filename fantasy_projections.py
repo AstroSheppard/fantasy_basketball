@@ -1,5 +1,4 @@
 from urllib.request import urlopen
-# from urllib.requests import urlopen
 import bs4
 from bs4 import BeautifulSoup as bs
 import pandas as pd
@@ -11,9 +10,10 @@ import datetime
 import matplotlib.pyplot as plt
 import itertools
 
-def get_matchup(team1, team2, week, league='51329'):
+def get_matchup(team1, team2, week, league='46134'):
     """get current matchup totals"""
     # 107260 for 2018
+    # 51329 for 2019
     temp="https://basketball.fantasysports.yahoo.com/nba/{l}/matchup?date=totals&week={w}&mid1={t1}&mid2={t2}"
     url=temp.format(w=str(week), t1=team1, t2=team2, l=league)
     html=urlopen(url)
@@ -89,7 +89,7 @@ def get_matchup(team1, team2, week, league='51329'):
     # how trade affects rankings
 #    return 1
 
-def get_fas(sort, proj, player, league='51329', date=None, trade=False):
+def get_fas(sort, proj, player, league='46134', date=None, trade=False):
     """Get list of top 125 FAs sorted and give per game stats (ie, divided by the entire season"""
 
     # if proj == 'proj' or proj == 'proj_opp':
@@ -182,7 +182,7 @@ def get_fas(sort, proj, player, league='51329', date=None, trade=False):
     return df[df['Players']==player].iloc[0,1:]
 
 
-def get_team(team, type, league='51329', date=None, drops=None,
+def get_team(team, type, league='46134', date=None, drops=None,
              include_bench=False, injured=True, trade = []):
 
     url_temp="https://basketball.fantasysports.yahoo.com/nba/{id}/{team}{type}"
@@ -354,7 +354,7 @@ def get_team(team, type, league='51329', date=None, drops=None,
 
 
 def matchup(team1, team2, week, start=0, end=7,
-            type='proj', league='51329', fas=None, drops=None,
+            type='proj', league='46134', fas=None, drops=None,
             include_bench=True, sim=False):
     """ Last input is a dict of fas and drops by date"""
 
@@ -511,7 +511,7 @@ def matchup(team1, team2, week, start=0, end=7,
         return [outcome, perc]
 
 
-def get_all(week=19, type='r', league='51329', inj=False):
+def get_all(week=19, type='r', league='46134', inj=False):
     # TRADES: Can only do 1 for 1 trades, but can do multiple teams.
     # Set the players coming from each team, and note the team they will
     # go to.
@@ -1078,7 +1078,7 @@ def get_all(week=19, type='r', league='51329', inj=False):
 
 #def get_players():
 
-#def get_games(team='10', start=0, end=7, league='51329',
+#def get_games(team='10', start=0, end=7, league='46134',
 #              drops=None, adds=None, ngames=None):
 #    """ Gets total reamining games for every player on roster. If dropping someone, input there name
 #    in drops (format: drops=[[players dropped today], [players dropped tomorrow], etc.]
@@ -1135,7 +1135,7 @@ def get_all(week=19, type='r', league='51329', inj=False):
 
 #    url_temp="https://basketball.fantasysports.yahoo.com/nba/{id}/{team}?stat1=AS&stat2=AS_2018"
 
-#    item='51329'
+#    item='46134'
 #    team=team
 
 #    url=url_temp.format(id=item, team=team)
@@ -1189,7 +1189,7 @@ def get_all(week=19, type='r', league='51329', inj=False):
 #    return stats
 
 def record_predictions(week, team1s, team2s,
-                       league='51329', mock=False, bench=True,
+                       league='46134', mock=False, bench=True,
                        type='proj'):
     """ Record predictions for all matchups at start of
     each week
@@ -1263,7 +1263,7 @@ def record_predictions(week, team1s, team2s,
                     hold.to_csv('mock_fantasy_predictions_avg_30.csv')
     return 1
 
-def record_results(week, team1s, team2s, league='51329', mock=False):
+def record_results(week, team1s, team2s, league='46134', mock=False):
     if mock == False:
         teams = np.arange(1,13).astype(str)
     else:
@@ -1303,17 +1303,67 @@ def record_results(week, team1s, team2s, league='51329', mock=False):
             hold.to_csv('mock_fantasy_results.csv')
     return hold
 
+def set_schedule(week=0, tuples=False):
+    """ Function to define schedule for entire season
+    and return it in dictionary form.
+    Output: 1-d array of dictionaries. Each dictionary is the 
+    schedule for a given week. Team is the key, and that team's
+    opponent is the value for that key. Can be converted to 
+    list of tuples via dict.items."""
+    nWeeks = 20
+    nTeams = 14
+    teams1 = np.zeros((nWeeks, nTeams)).astype(int)
+    teams2 = np.zeros((nWeeks, nTeams)).astype(int)
+    teams1[:] = np.arange(1, nTeams+1)
+    teams2[:] = [2, 1, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 8]
 
+    # Increase by one each week to 13
+    # 14 is when index = team number
+    inc = np.tile(np.arange(nWeeks), (nTeams, 1)).T
+    teams2 += inc
+    teams2[teams2 > nTeams-1] -= (nTeams-1)
+    teams2[teams2 > nTeams-1] -= (nTeams-1)
 
+    # Team 14
+    teams2[:, nTeams-1] = [8, 2, 9, 3, 10, 4, 11
+                           , 5, 12, 6, 13, 7, 1
+                           , 8, 2, 9, 3, 10, 4, 11]
+
+    # Replace self with 14:
+    teams2[teams2==teams1] = nTeams
+    teams1 = teams1.astype(str).tolist()
+    teams2 = teams2.astype(str).tolist()
+
+    matches = [dict(list(zip(teams1[i], teams2[i]))) for i in range(nWeeks)]
+
+    if tuples==False:
+        current = matches[week]
+        current = [tuple(sorted(t))
+                   for t in list(current.items())]
+        current = sorted(list(set(current)))
+        team1s = np.array([tup[0] for tup in current])
+        team2s = np.array([tup[1] for tup in current])
+        return team1s, team2s
+    else:
+        remaining_matches = matches[week:]
+        match_tuples = []
+        for dic in matches:
+            st = [tuple(sorted(t)) for t in list(dic.items())]
+            match_tuples += list(set(st))
+        return match_tuples
+        
 if __name__ == '__main__':
     week = sys.argv[1]
     pre_week = str(int(week) - 1)
-    teams1 = np.array([2, 1, 9, 3, 4, 10]).astype(str)
-    teams2 = np.array([7, 8, 11, 6, 5, 12]).astype(str)
-    league = '51329'
-    mock=False
+    # teams1 = np.array([13, 1, 4, 5, 6, 7, 8]).astype(str)
+    # teams2 = np.array([3, 2, 12, 11, 10, 9, 14]).astype(str)
+
+    teams1, teams2 = set_schedule(week)
+  
+    league = '46134'
+    mock = False
     #record_results(pre_week, teams1, teams2, league=league, mock=mock)
-    print(("Results recorded for league %s" % league))
+    print("Results recorded for league %s" % league)
 
     #league = '137124'
     #teams1 = np.array([1, 3]).astype(str)
@@ -1321,13 +1371,13 @@ if __name__ == '__main__':
     #mock=True
     #record_results(pre_week, teams1, teams2, league=league, mock=mock)
     #print "Results recorded for league %s" % league
-    #league = '51329'
+    #league = '46134'
     #mock=False
 
     teams1 = np.array([2, 1, 10, 3, 4, 5]).astype(str)
     teams2 = np.array([8, 9, 11, 7, 6, 12]).astype(str)
     record_predictions(week, teams1, teams2, league=league, mock=mock)
-    print(("Predictions recorded for league %s" % league))
+    print("Predictions recorded for league %s" % league)
     print()
     print()
     record_predictions(week, teams1, teams2, league=league, mock=mock, type='avg')
