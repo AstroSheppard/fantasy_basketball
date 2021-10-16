@@ -1,8 +1,0 @@
-env
-*~
-*#
-*__pycache__/
-.DS_Store
-*.bak
-tracking
-.gitignore
