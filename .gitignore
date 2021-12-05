@@ -1,0 +1,8 @@
+*~
+*.bak
+env/
+__pycache__/
+#*
+.#*
+*.log
+tracking
