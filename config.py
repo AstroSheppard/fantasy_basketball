@@ -1,6 +1,6 @@
 [VALUES]
 week = 0
-league = 46134
+league = 81947
 mock_league = 
 
 [EXTRAS]
@@ -11,7 +11,7 @@ record_predictions = no
 mock_league = no
 get_all = no
 
-[TYPE]
+[BASE]
 # Which type of projection to use?
 # Projected daily stats (recommended)
 projected = yes
